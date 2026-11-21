@@ -1,0 +1,50 @@
+// Native tests for Karkain-AI.
+
+func sample_model() {
+    let m = add_example(new_model("knn"), 0, 0, "left")
+    m = add_example(m, 10, 10, "right")
+    return add_example(m, 0, 10, "up")
+}
+
+func test_new_model() {
+    let m = new_model("knn")
+    assert_eq(model_name(m), "knn")
+    assert_eq(example_count(m), 0)
+}
+
+func test_add_example() {
+    let m = sample_model()
+    assert_eq(example_count(m), 3)
+}
+
+func test_abs_diff() {
+    assert_eq(abs_diff(3, 7), 4)
+    assert_eq(abs_diff(7, 3), 4)
+    assert_eq(abs_diff(4, 4), 0)
+}
+
+func test_distance() {
+    assert_eq(distance(0, 0, 3, 4), 7)
+    assert_eq(distance(5, 5, 5, 5), 0)
+}
+
+func test_predict_empty() {
+    assert_eq(predict(new_model("m"), 1, 1), "")
+}
+
+func test_predict_nearest() {
+    let m = sample_model()
+    assert_eq(predict(m, 1, 1), "left")
+    assert_eq(predict(m, 9, 9), "right")
+    assert_eq(predict(m, 0, 9), "up")
+}
+
+func test_matches() {
+    let m = sample_model()
+    assert(matches(m, 1, 1, "left"))
+    assert(matches(m, 1, 1, "right") == false)
+}
+
+func test_describe_model() {
+    assert_eq(describe_model(sample_model()), "knn:examples=3")
+}

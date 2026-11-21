@@ -1,0 +1,79 @@
+// Karkain-AI - AI provider and inference integration model.
+// Karkain Language v1.2.0 verified baseline (tag v1.2.0,
+// commit 77d70693e1e3134dac312a303bffafa7d50fa988).
+//
+// Scope boundary: v1.2.0 has only hand-rolled arithmetic demonstrations,
+// no tensor language surface. This framework implements a transparent
+// nearest-neighbour classifier over 2D integer examples. It does not call
+// external AI providers, load models or claim ML framework capabilities.
+//
+// Model representation: [name, x, y, label, x, y, label, ...].
+
+// new_model creates an empty named model.
+public func new_model(name) {
+    let m = []
+    m = push(m, name)
+    return m
+}
+
+// model_name returns the model name.
+public func model_name(model) {
+    return model[0]
+}
+
+// add_example registers a labelled 2D example.
+public func add_example(model, x, y, label) {
+    let out = model
+    out = push(out, x)
+    out = push(out, y)
+    out = push(out, label)
+    return out
+}
+
+// example_count returns the number of stored examples.
+public func example_count(model) {
+    return (len(model) - 1) / 3
+}
+
+// abs_diff returns the absolute difference of two integers.
+public func abs_diff(a, b) {
+    if a > b {
+        return a - b
+    }
+    return b - a
+}
+
+// distance returns Manhattan distance between two 2D points.
+public func distance(x1, y1, x2, y2) {
+    return abs_diff(x1, x2) + abs_diff(y1, y2)
+}
+
+// predict returns the label of the nearest example, or "" when empty.
+public func predict(model, x, y) {
+    let n = example_count(model)
+    if n == 0 {
+        return ""
+    }
+    let best = distance(x, y, model[1], model[2])
+    let label = model[3]
+    let i = 1
+    while (i < n) {
+        let d = distance(x, y, model[1 + i * 3], model[2 + i * 3])
+        if d < best {
+            best = d
+            label = model[3 + i * 3]
+        }
+        i = i + 1
+    }
+    return label
+}
+
+// confidence returns 1 when the prediction matches the expected label.
+public func matches(model, x, y, expected) {
+    return predict(model, x, y) == expected
+}
+
+// describe_model builds a one-line model diagnostic.
+public func describe_model(model) {
+    return model_name(model) + ":examples=" + str(example_count(model))
+}

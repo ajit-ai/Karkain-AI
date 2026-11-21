@@ -1,0 +1,13 @@
+// Karkain-AI runnable example: a nearest-neighbour classifier.
+import ai
+
+func main() {
+    let m = new_model("spam-filter")
+    m = add_example(m, 1, 1, "ham")
+    m = add_example(m, 9, 9, "spam")
+    m = add_example(m, 8, 8, "spam")
+
+    println(describe_model(m))
+    println("near_ham=" + predict(m, 0, 2))
+    println("near_spam=" + predict(m, 10, 8))
+}

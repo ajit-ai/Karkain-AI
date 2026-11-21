@@ -1,0 +1,11 @@
+// Integration verification for the Karkain-AI public API.
+import ai
+
+func main() {
+    let m = add_example(add_example(new_model("classifier"), 0, 0, "low"), 10, 10, "high")
+    assert_eq(example_count(m), 2)
+    assert_eq(predict(m, 1, 1), "low")
+    assert_eq(predict(m, 9, 9), "high")
+    println(describe_model(m))
+    println("prediction=" + predict(m, 10, 9))
+}
