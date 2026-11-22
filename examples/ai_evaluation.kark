@@ -1,0 +1,18 @@
+// Karkain-AI Phase 2 example: registry, prompt pipeline and evaluation.
+import ai
+
+func main() {
+    let registry = register_model(new_registry(), "m1", new_model("m1"))
+    println("models=" + str(registry_count(registry)))
+
+    let prompt = bind_prompt(new_prompt("task"), "goal", "classify")
+    println("goal=" + prompt_binding(prompt, "goal", ""))
+
+    let pipeline = ai_add_stage(new_ai_pipeline("inference"), "preprocess")
+    println("valid=" + str(validate_ai_pipeline(pipeline)))
+
+    let eval = add_eval_case(add_eval_case(new_eval_set(), "a", "a"), "b", "b")
+    println("accuracy=" + str(eval_accuracy(eval)))
+    println("f1=" + str(f1(precision(8, 2), recall(8, 2))))
+    println("contract=" + inference_contract())
+}

@@ -34,7 +34,7 @@ try {
     $out = Invoke-Karkain @('test', $combined); $code = $LASTEXITCODE
     Write-Output "TEST native: exit=$code"; Write-Output $out
     if ($code -ne 0) { throw 'native tests failed' }
-    if ($out -notlike '*8 tests, 8 passed, 0 failed*') { throw 'native test summary mismatch' }
+    if ($out -notlike '*17 tests, 17 passed, 0 failed*') { throw 'native test summary mismatch' }
 
     $verify = Join-Path $repo 'src\verify.kark'
     $out = Invoke-Karkain @('run', $verify); $code = $LASTEXITCODE
@@ -54,6 +54,16 @@ try {
     $out = Invoke-Karkain @('run', (Join-Path $exDir 'classifier.kark')); $code = $LASTEXITCODE
     Write-Output "RUN example: exit=$code"; Write-Output $out
     if ($code -ne 0) { throw 'example failed' }    if ($out -notlike '*near_ham=ham*') { throw 'example check missing' }
+    $advDir = Join-Path $tmp 'advanced'
+    New-Item -ItemType Directory -Path $advDir | Out-Null
+    Copy-Item -LiteralPath $module -Destination (Join-Path $advDir 'ai.kark')
+    Copy-Item -LiteralPath (Join-Path $repo 'examples\ai_evaluation.kark') -Destination (Join-Path $advDir 'ai_evaluation.kark')
+    $out = Invoke-Karkain @('run', (Join-Path $advDir 'ai_evaluation.kark')); $code = $LASTEXITCODE
+    Write-Output "RUN advanced example: exit=$code"; Write-Output $out
+    if ($code -ne 0) { throw 'advanced example failed' }
+    if ($out -notlike '*models=1*') { throw 'advanced registry output missing' }
+    if ($out -notlike '*accuracy=1*') { throw 'advanced evaluation output missing' }
+
     Write-Output 'VERIFY: ALL GATES PASSED'
 }
 finally {

@@ -48,3 +48,78 @@ func test_matches() {
 func test_describe_model() {
     assert_eq(describe_model(sample_model()), "knn:examples=3")
 }
+
+// --- Phase 2 regression ---
+
+func test_phase1_regression() {
+    let m = add_example(add_example(new_model("knn"), 0, 0, "left"), 10, 10, "right")
+    assert_eq(example_count(m), 2)
+    assert_eq(predict(m, 1, 1), "left")
+    assert(matches(m, 9, 9, "right"))
+}
+
+// --- Phase 2 additions ---
+
+func test_model_registry() {
+    let r = register_model(register_model(new_registry(), "a", new_model("a")), "b", new_model("b"))
+    assert_eq(registry_count(r), 2)
+    assert(model_registered(r, "a"))
+    assert(model_registered(r, "x") == false)
+    assert_eq(model_name(lookup_model(r, "b")), "b")
+    assert_eq(model_name(lookup_model(r, "x")), "missing")
+}
+
+func test_model_metadata() {
+    let m = new_metadata("m1", "1.2.0", "classification")
+    assert_eq(model_version(m), "1.2.0")
+    assert_eq(model_capability(m), "classification")
+    assert(compatible_version("1.2.0", "1.1.0"))
+}
+
+func test_prompts_and_pipeline() {
+    let p = bind_prompt(bind_prompt(new_prompt("hello"), "name", "Ajit"), "mode", "fast")
+    assert_eq(prompt_binding(p, "name", ""), "Ajit")
+    assert_eq(prompt_binding(p, "none", "x"), "x")
+    let pipe = ai_add_stage(ai_add_stage(new_ai_pipeline("p"), "preprocess"), "infer")
+    assert_eq(ai_stage_count(pipe), 2)
+    assert(validate_ai_pipeline(pipe))
+    assert(validate_ai_pipeline(new_ai_pipeline("empty")) == false)
+}
+
+func test_inference_models() {
+    let req = new_inference_request(1, "m1", "input")
+    assert_eq(request_model(req), "m1")
+    let res = new_inference_response(1, "output", 12)
+    assert_eq(response_tokens(res), 12)
+}
+
+func test_provider_contract() {
+    let p = new_provider("test", "infer,stream")
+    assert(provider_supports(p, "infer"))
+    assert(provider_supports(p, "train") == false)
+    assert_eq(inference_contract(), "provider.infer(model,request)")
+}
+
+func test_metrics() {
+    assert_eq(accuracy(8, 1, 1, 10), 0.9)
+    assert_eq(precision(8, 2), 0.8)
+    assert_eq(recall(8, 2), 0.8)
+    assert_eq(f1(1.0, 1.0), 1.0)
+    assert_eq(accuracy(0, 0, 0, 0), 0.0)
+    assert_eq(precision(0, 0), 0.0)
+    assert_eq(recall(0, 0), 0.0)
+    assert_eq(f1(0.0, 0.0), 0.0)
+}
+
+func test_evaluation() {
+    let set = add_eval_case(add_eval_case(add_eval_case(new_eval_set(), "a", "a"), "b", "b"), "c", "x")
+    assert_eq(eval_count(set), 3)
+    assert(eval_accuracy(set) > 0.6)
+    assert_eq(eval_accuracy(new_eval_set()), 0.0)
+}
+
+func test_routing_and_provenance() {
+    assert_eq(route_model(new_route_policy("chat", "m1")), "m1")
+    assert_eq(safety_contract(), "ai.validate_output(response,policy)")
+    assert_eq(provenance_id(new_provenance("run1")), "run1")
+}

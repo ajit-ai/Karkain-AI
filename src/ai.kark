@@ -77,3 +77,233 @@ public func matches(model, x, y, expected) {
 public func describe_model(model) {
     return model_name(model) + ":examples=" + str(example_count(model))
 }
+
+// ---------------------------------------------------------------------------
+// Phase 2 additions. Phase 1 nearest-neighbour model API is unchanged. No
+// external model provider is connected; adapter/inference operations remain
+// explicit contracts. Evaluation metrics below are executable float math
+// (verified: float +, -, *, / work; sqrt/abs/pow are stubs returning 0).
+
+// new_registry creates an empty model registry.
+public func new_registry() {
+    return []
+}
+
+// register_model adds or replaces a named model.
+public func register_model(registry, name, model) {
+    let out = []
+    out = push(out, name)
+    out = push(out, model)
+    let i = 0
+    while (i < len(registry)) {
+        if registry[i] == name {
+            i = i + 2
+        } else {
+            out = push(out, registry[i])
+            out = push(out, registry[i + 1])
+            i = i + 2
+        }
+    }
+    return out
+}
+
+// registry_count returns the number of registered models.
+public func registry_count(registry) { return len(registry) / 2 }
+
+// model_registered reports whether a name is registered.
+public func model_registered(registry, name) {
+    let i = 0
+    while (i < len(registry)) {
+        if registry[i] == name { return true }
+        i = i + 2
+    }
+    return false
+}
+
+// lookup_model returns a registered model or an empty model.
+public func lookup_model(registry, name) {
+    let i = 0
+    while (i < len(registry)) {
+        if registry[i] == name { return registry[i + 1] }
+        i = i + 2
+    }
+    return new_model("missing")
+}
+
+// new_metadata creates model metadata with version and capability.
+public func new_metadata(name, version, capability) {
+    let m = []
+    m = push(m, name)
+    m = push(m, version)
+    m = push(m, capability)
+    return m
+}
+
+// model_version returns a declared version.
+public func model_version(metadata) { return metadata[1] }
+
+// model_capability returns a declared capability.
+public func model_capability(metadata) { return metadata[2] }
+
+// compatible_version checks a simple major version prefix.
+public func compatible_version(current, required) { return current >= required }
+
+// new_prompt creates a prompt template.
+public func new_prompt(template) {
+    let p = []
+    p = push(p, template)
+    return p
+}
+
+// bind_prompt adds a key/value binding to a prompt.
+public func bind_prompt(prompt, key, value) {
+    let out = prompt
+    out = push(out, key)
+    out = push(out, value)
+    return out
+}
+
+// prompt_binding returns a bound value or a fallback.
+public func prompt_binding(prompt, key, fallback) {
+    let i = 1
+    while (i < len(prompt)) {
+        if prompt[i] == key { return prompt[i + 1] }
+        i = i + 2
+    }
+    return fallback
+}
+
+// new_ai_pipeline creates a named AI pipeline.
+public func new_ai_pipeline(name) {
+    let p = []
+    p = push(p, name)
+    return p
+}
+
+// ai_add_stage appends a pipeline stage.
+public func ai_add_stage(pipeline, stage) { return push(pipeline, stage) }
+
+// ai_stage_count returns the number of stages.
+public func ai_stage_count(pipeline) { return len(pipeline) - 1 }
+
+// validate_ai_pipeline rejects a pipeline with no stages.
+public func validate_ai_pipeline(pipeline) { return ai_stage_count(pipeline) > 0 }
+
+// new_inference_request creates an inference request model.
+public func new_inference_request(id, name, input) {
+    let r = []
+    r = push(r, id)
+    r = push(r, name)
+    r = push(r, input)
+    return r
+}
+
+// request_model returns the requested model name.
+public func request_model(request) { return request[1] }
+
+// new_inference_response creates an inference response model.
+public func new_inference_response(id, output, tokens) {
+    let r = []
+    r = push(r, id)
+    r = push(r, output)
+    r = push(r, tokens)
+    return r
+}
+
+// response_tokens returns token usage metadata.
+public func response_tokens(response) { return response[2] }
+
+// new_provider declares a model provider adapter interface.
+public func new_provider(name, capabilities) {
+    let p = []
+    p = push(p, name)
+    p = push(p, capabilities)
+    return p
+}
+
+// provider_supports reports whether a provider capability is advertised.
+public func provider_supports(provider, capability) { return contains(provider[1], capability) }
+
+// inference_contract documents the missing provider call.
+public func inference_contract() { return "provider.infer(model,request)" }
+
+// accuracy computes classification accuracy from a confusion matrix.
+public func accuracy(tp, fp, false_neg, tn) {
+    let total = tp + fp + false_neg + tn
+    if total == 0 { return 0.0 }
+    return (1.0 * (tp + tn)) / total
+}
+
+// precision computes precision with zero-division protection.
+public func precision(tp, fp) {
+    let total = tp + fp
+    if total == 0 { return 0.0 }
+    return (1.0 * tp) / total
+}
+
+// recall computes recall with zero-division protection.
+public func recall(tp, false_neg) {
+    let total = tp + false_neg
+    if total == 0 { return 0.0 }
+    return (1.0 * tp) / total
+}
+
+// f1 computes the harmonic mean of precision and recall.
+public func f1(p, r) {
+    let total = p + r
+    if total == 0.0 { return 0.0 }
+    return 2.0 * p * r / total
+}
+
+// new_eval_set creates an evaluation dataset.
+public func new_eval_set() {
+    return []
+}
+
+// add_eval_case records an expected/actual pair.
+public func add_eval_case(set, expected, actual) {
+    let out = set
+    out = push(out, expected)
+    out = push(out, actual)
+    return out
+}
+
+// eval_count returns the number of evaluation cases.
+public func eval_count(set) { return len(set) / 2 }
+
+// eval_accuracy computes accuracy over recorded cases.
+public func eval_accuracy(set) {
+    let n = eval_count(set)
+    if n == 0 { return 0.0 }
+    let correct = 0
+    let i = 0
+    while (i < len(set)) {
+        if set[i] == set[i + 1] { correct = correct + 1 }
+        i = i + 2
+    }
+    return (1.0 * correct) / n
+}
+
+// new_route_policy creates a model routing policy.
+public func new_route_policy(name, model) {
+    let p = []
+    p = push(p, name)
+    p = push(p, model)
+    return p
+}
+
+// route_model returns the target model of a policy.
+public func route_model(policy) { return policy[1] }
+
+// safety_contract documents output safety validation.
+public func safety_contract() { return "ai.validate_output(response,policy)" }
+
+// new_provenance creates reproducibility metadata.
+public func new_provenance(id) {
+    let p = []
+    p = push(p, id)
+    return p
+}
+
+// provenance_id returns a provenance identifier.
+public func provenance_id(provenance) { return provenance[0] }
